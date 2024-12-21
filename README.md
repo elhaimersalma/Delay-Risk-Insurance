@@ -49,114 +49,134 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
 
 ---
 
-## Étapes d'installation détaillées
+## Étapes d'installation
 
-### Étape 1 : Cloner le projet
-
-1. Ouvrez un terminal et exécutez :
+### 1. Initialiser le projet Truffle
+1. Créez un nouveau dossier pour votre projet.
    ```bash
-   git clone <URL_DU_REPOSITORY>
+   mkdir assurance-risque-retard
    cd assurance-risque-retard
    ```
-
-2. Installez les dépendances nécessaires :
+2. Initialisez un projet Truffle.
    ```bash
-   npm install
+   truffle init
    ```
 
-### Étape 2 : Configurer Ganache
+### 2. Ajouter le smart contract
+1. Allez dans le dossier `contracts/` et créez un fichier pour le contrat principal.
+   ```bash
+   touch contracts/AssuranceRetard.sol
+   ```
+2. Copiez le code Solidity dans ce fichier.
 
-1. Lancez Ganache.
-2. Créez un nouveau projet ou utilisez l'option "Quickstart Ethereum".
-3. Notez les informations du réseau local (exemple : RPC Server `http://127.0.0.1:7545`).
-4. Copiez une clé privée d'un compte généré par Ganache pour l'utiliser avec MetaMask.
+### 3. Configurer Truffle
+1. Ouvrez le fichier `truffle-config.js` et configurez le réseau Ganache local :
+   ```javascript
+   module.exports = {
+     networks: {
+       development: {
+         host: "127.0.0.1", // Adresse locale de Ganache
+         port: 7545,        // Port par défaut de Ganache
+         network_id: "*",  // Match tous les réseaux
+       },
+     },
+     compilers: {
+       solc: {
+         version: "0.8.x", // Version de Solidity
+       },
+     },
+   };
+   ```
 
-### Étape 3 : Configurer MetaMask
-
-1. Ajoutez un nouveau réseau personnalisé dans MetaMask :
-   - Nom du réseau : Ganache Local
-   - RPC URL : `http://127.0.0.1:7545`
-   - ID de chaîne : 1337 (ou celui généré par Ganache).
-2. Importez la clé privée copiée depuis Ganache pour tester les transactions.
-
-### Étape 4 : Compiler et déployer les smart contracts
-
-1. Compilez les contrats avec Truffle :
+### 4. Compiler les smart contracts
+1. Compilez le contrat pour générer les fichiers ABI.
    ```bash
    truffle compile
    ```
-   - Cela génère des fichiers ABI (Application Binary Interface) pour interagir avec les contrats.
 
-2. Déployez les contrats sur Ganache :
+### 5. Déployer les smart contracts
+1. Ajoutez un script de migration dans le dossier `migrations/`. Créez un fichier `2_deploy_contracts.js` :
+   ```bash
+   touch migrations/2_deploy_contracts.js
+   ```
+2. Ajoutez le contenu suivant :
+   ```javascript
+   const AssuranceRetard = artifacts.require("AssuranceRetard");
+
+   module.exports = function (deployer) {
+     deployer.deploy(AssuranceRetard);
+   };
+   ```
+3. Déployez le contrat sur Ganache :
    ```bash
    truffle migrate
    ```
-   - Assurez-vous que Ganache est en cours d'exécution avant de lancer cette commande.
-
-### Étape 5 : Tester les smart contracts
-
-1. Exécutez les tests inclus dans le projet :
-   ```bash
-   truffle test
-   ```
-   - Vérifiez que toutes les fonctionnalités fonctionnent comme prévu.
 
 ---
 
 ## Interagir avec le contrat
 
-### Méthodes principales :
-
-1. **Enregistrer un service** (Propriétaire uniquement) :
-   - Fonction : `enregistrerService(string nom, uint compensation, uint seuilRetard)`.
-   - Exemple :
+### Utilisation de la console Truffle
+1. Lancez une console Truffle pour interagir avec le contrat déployé.
+   ```bash
+   truffle console
+   ```
+2. Chargez le contrat déployé dans la console :
+   ```javascript
+   let instance = await AssuranceRetard.deployed();
+   ```
+3. Appelez les fonctions pour vérifier le fonctionnement :
+   - Enregistrer un service :
      ```javascript
-     await contract.enregistrerService("Train SNCF", 1000000000000000000, 30);
+     await instance.enregistrerService("Train SNCF", web3.utils.toWei("1", "ether"), 30, { from: "0xAdresseCompteGanache" });
      ```
-
-2. **Déclarer un retard** :
-   - Fonction : `declarerRetard(uint serviceId, uint retardDeclare)`.
-   - Exemple :
+   - Déclarer un retard :
      ```javascript
-     await contract.declarerRetard(1, 45);
+     await instance.declarerRetard(1, 45, { from: "0xAdresseUtilisateur" });
      ```
-
-3. **Recevoir une compensation** :
-   - Fonction : `compenserRetard(uint serviceId)`.
-   - Exemple :
+   - Recevoir une compensation :
      ```javascript
-     await contract.compenserRetard(1);
+     await instance.compenserRetard(1, { from: "0xAdresseUtilisateur" });
      ```
 
 ---
 
-## Déploiement sur un réseau de test Ethereum
+## Développement frontend
 
-### Étape 1 : Configurer un réseau de test (Rinkeby ou Goerli)
+1. Configurez un frontend avec HTML, CSS, et JavaScript.
+2. Utilisez **Web3.js** pour connecter votre interface au contrat déployé.
+   - Exemple d'initialisation de Web3 :
+     ```javascript
+     const web3 = new Web3(Web3.givenProvider || "http://127.0.0.1:7545");
+     const contract = new web3.eth.Contract(ABI, "AdresseDuContrat");
+     ```
 
-1. Obtenez des Ethers de test via un faucet.
-2. Modifiez le fichier `truffle-config.js` pour inclure la configuration du réseau de test.
+---
 
-### Étape 2 : Déployer sur le réseau de test
+## Tests et déploiement
 
-1. Exécutez la commande suivante :
+### Tests unitaires
+1. Ajoutez des tests dans le dossier `test/` pour valider les fonctionnalités.
+2. Exemple de test en JavaScript :
+   ```javascript
+   const AssuranceRetard = artifacts.require("AssuranceRetard");
+
+   contract("AssuranceRetard", (accounts) => {
+     it("devrait enregistrer un service", async () => {
+       const instance = await AssuranceRetard.deployed();
+       await instance.enregistrerService("Train SNCF", 1000, 30, { from: accounts[0] });
+       const service = await instance.services(1);
+       assert.equal(service.nom, "Train SNCF", "Le service n'est pas enregistré correctement");
+     });
+   });
+   ```
+
+### Déploiement sur un réseau de test Ethereum
+1. Configurez un réseau de test (Rinkeby ou Goerli) dans `truffle-config.js`.
+2. Déployez avec :
    ```bash
    truffle migrate --network rinkeby
    ```
-
-2. Vérifiez le déploiement via un explorateur blockchain comme Etherscan.
-
----
-
-## Fonctionnement étape par étape
-
-1. **Propriétaire** :
-   - Enregistre les services avec leurs seuils et montants de compensation.
-2. **Utilisateur** :
-   - Déclare un retard via la DApp ou directement sur la blockchain.
-   - Reçoit automatiquement une compensation si les critères sont remplis.
-3. **Propriétaire** :
-   - Peut ajouter des fonds au contrat pour garantir les paiements.
 
 ---
 
@@ -168,7 +188,3 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
 - [MetaMask](https://metamask.io/)
 
 ---
-
-## Auteur
-
-**Salma** - Développement de la DApp d'assurance retard. N'hésitez pas à me contacter pour toute question ou support.
