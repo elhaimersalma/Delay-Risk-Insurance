@@ -65,7 +65,7 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
 ### 2. Ajouter le smart contract
 1. Allez dans le dossier `contracts/` et créez un fichier pour le contrat principal.
    ```bash
-   touch contracts/AssuranceRetard.sol
+   echo. > contracts\AssuranceRetard.sol
    ```
 2. Copiez le code Solidity dans ce fichier.
 
