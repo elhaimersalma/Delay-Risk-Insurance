@@ -97,7 +97,7 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
 ### 5. Déployer les smart contracts
 1. Ajoutez un script de migration dans le dossier `migrations/`. Créez un fichier `2_deploy_contracts.js` :
    ```bash
-   touch migrations/2_deploy_contracts.js
+   echo. > migrations\2_deploy_contracts.js
    ```
 2. Ajoutez le contenu suivant :
    ```javascript
