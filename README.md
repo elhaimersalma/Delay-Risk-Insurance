@@ -1,12 +1,15 @@
+
 # Assurance de Risque Retard - DApp
 
 Ce projet est une application décentralisée (DApp) permettant de compenser les utilisateurs en cas de retard d'un service (vol, train, etc.) en utilisant des smart contracts sur la blockchain Ethereum.
 
+---
+
 ## Fonctionnalités principales
 
-- Enregistrement de services (compagnies, seuils de retard, montants de compensation).
-- Déclaration de retard par les utilisateurs.
-- Compensation automatique en Ether en cas de dépassement du seuil de retard.
+- Enregistrement des utilisateurs.
+- Soumission de réclamations pour des retards.
+- Compensation automatique en Ether après approbation des réclamations.
 - Gestion des fonds du contrat.
 
 ---
@@ -54,8 +57,8 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
 ### 1. Initialiser le projet Truffle
 1. Créez un nouveau dossier pour votre projet.
    ```bash
-   mkdir assurance-risque-retard
-   cd assurance-risque-retard
+   mkdir DelayInsurance
+   cd DelayInsurance
    ```
 2. Initialisez un projet Truffle.
    ```bash
@@ -65,7 +68,7 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
 ### 2. Ajouter le smart contract
 1. Allez dans le dossier `contracts/` et créez un fichier pour le contrat principal.
    ```bash
-   echo. > contracts\AssuranceRetard.sol
+   echo. > contracts\DelayInsurance.sol
    ```
 2. Copiez le code Solidity dans ce fichier.
 
@@ -97,20 +100,30 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
 ### 5. Déployer les smart contracts
 1. Ajoutez un script de migration dans le dossier `migrations/`. Créez un fichier `2_deploy_contracts.js` :
    ```bash
-   echo. > migrations\2_deploy_contracts.js
+   echo. > migrations\2_deploy_delay_insurance.js
    ```
 2. Ajoutez le contenu suivant :
    ```javascript
-   const AssuranceRetard = artifacts.require("AssuranceRetard");
+   const DelayInsurance = artifacts.require("DelayInsurance");
 
    module.exports = function (deployer) {
-     deployer.deploy(AssuranceRetard);
+     deployer.deploy(DelayInsurance);
    };
    ```
 3. Déployez le contrat sur Ganache :
    ```bash
-   truffle migrate
+   truffle migrate --network development
    ```
+
+---
+
+## Comptes Ethereum pour Tests
+
+Voici les adresses Ethereum pour les tests locaux :
+
+- **Admin Account :** `0x8Cd3a0783492e0ad6Fc3a64007751f4108093498`
+- **User Account 1 :** `0x6A67A9dFC41FbF5E267D1B0f2D8fE9E8E5E5A0Dd`
+- **User Account 2 :** `0x5E3560E2E2A58cAeF7E81fECDE948D7E6c7e8e53`
 
 ---
 
@@ -123,32 +136,30 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
    ```
 2. Chargez le contrat déployé dans la console :
    ```javascript
-   let instance = await AssuranceRetard.deployed();
+   let instance = await DelayInsurance.deployed();
    ```
 3. Appelez les fonctions pour vérifier le fonctionnement :
-   - Enregistrer un service :
+   - Enregistrer un utilisateur :
      ```javascript
-     await instance.enregistrerService("Train SNCF", web3.utils.toWei("1", "ether"), 30, { from: "0xAdresseCompteGanache" });
+     await instance.registerUser("Alice", { from: "0x6A67A9dFC41FbF5E267D1B0f2D8fE9E8E5E5A0Dd" });
      ```
-   - Déclarer un retard :
+   - Soumettre une réclamation :
      ```javascript
-     await instance.declarerRetard(1, 45, { from: "0xAdresseUtilisateur" });
+     await instance.submitClaim(500, 30, { from: "0x6A67A9dFC41FbF5E267D1B0f2D8fE9E8E5E5A0Dd" });
      ```
-   - Recevoir une compensation :
+   - Approver une réclamation :
      ```javascript
-     await instance.compenserRetard(1, { from: "0xAdresseUtilisateur" });
+     await instance.approveClaim(0, { from: "0x8Cd3a0783492e0ad6Fc3a64007751f4108093498" });
      ```
-
----
-
-## Développement frontend
-
-1. Configurez un frontend avec HTML, CSS, et JavaScript.
-2. Utilisez **Web3.js** pour connecter votre interface au contrat déployé.
-   - Exemple d'initialisation de Web3 :
+   - Vérifier une réclamation :
      ```javascript
-     const web3 = new Web3(Web3.givenProvider || "http://127.0.0.1:7545");
-     const contract = new web3.eth.Contract(ABI, "AdresseDuContrat");
+     const claim = await instance.claims(0);
+     console.log({
+       user: claim.user,
+       amount: claim.amount.toString(),
+       isPaid: claim.isPaid,
+       delayTime: claim.delayTime.toString()
+     });
      ```
 
 ---
@@ -159,23 +170,16 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
 1. Ajoutez des tests dans le dossier `test/` pour valider les fonctionnalités.
 2. Exemple de test en JavaScript :
    ```javascript
-   const AssuranceRetard = artifacts.require("AssuranceRetard");
+   const DelayInsurance = artifacts.require("DelayInsurance");
 
-   contract("AssuranceRetard", (accounts) => {
-     it("devrait enregistrer un service", async () => {
-       const instance = await AssuranceRetard.deployed();
-       await instance.enregistrerService("Train SNCF", 1000, 30, { from: accounts[0] });
-       const service = await instance.services(1);
-       assert.equal(service.nom, "Train SNCF", "Le service n'est pas enregistré correctement");
+   contract("DelayInsurance", (accounts) => {
+     it("should register a user", async () => {
+       const instance = await DelayInsurance.deployed();
+       await instance.registerUser("Alice", { from: accounts[0] });
+       const user = await instance.users(accounts[0]);
+       assert.equal(user.name, "Alice", "User registration failed");
      });
    });
-   ```
-
-### Déploiement sur un réseau de test Ethereum
-1. Configurez un réseau de test (Rinkeby ou Goerli) dans `truffle-config.js`.
-2. Déployez avec :
-   ```bash
-   truffle migrate --network rinkeby
    ```
 
 ---
@@ -187,4 +191,3 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
 - [Ganache](https://trufflesuite.com/ganache/)
 - [MetaMask](https://metamask.io/)
 
----
