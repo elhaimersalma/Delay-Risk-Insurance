@@ -1,142 +1,87 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-/**
- * @title AssuranceRetard
- * @dev Contrat pour gérer une assurance de risque retard, permettant aux utilisateurs
- * de recevoir une compensation en cas de retard dépassant un seuil défini.
- */
-contract AssuranceRetard {
-
-    // Structure pour définir un service
-    struct Service {
-        string nom;               // Nom du service (ex: Train, Vol, etc.)
-        address compagnie;        // Adresse de la compagnie gérant le service
-        uint compensation;        // Montant de la compensation (en wei)
-        uint seuilRetard;         // Seuil de retard (en minutes)
-        bool existe;              // Indique si le service est enregistré
+contract DelayInsurance {
+    // Structure pour stocker les informations des réclamations
+    struct Claim {
+        address user;       // Adresse de l'utilisateur
+        uint256 amount;     // Montant réclamé
+        bool isPaid;        // Indique si la réclamation a été payée
+        uint256 delayTime;  // Temps de retard en minutes
     }
 
-    // Structure pour les déclarations de retard
-    struct DeclarationRetard {
-        uint serviceId;           // ID du service concerné
-        uint retardDeclare;       // Retard déclaré (en minutes)
-        bool estCompense;         // Statut de la compensation
+    // Structure pour les utilisateurs
+    struct User {
+        string name;        // Nom de l'utilisateur
+        address wallet;     // Adresse Ethereum
     }
 
-    // Adresse du propriétaire du contrat
-    address public owner;
-    // Nombre total de services enregistrés
-    uint public totalServices;
-    // Mapping des services par leur ID
-    mapping(uint => Service) public services;
-    // Mapping des déclarations de retard pour chaque utilisateur
-    mapping(address => DeclarationRetard[]) public declarations;
+    // Mapping pour stocker les utilisateurs
+    mapping(address => User) public users;
 
-    // Événements pour journaliser les actions
-    event ServiceEnregistre(uint serviceId, string nom, address compagnie, uint compensation);
-    event RetardDeclare(address utilisateur, uint serviceId, uint retardDeclare);
-    event CompensationPayee(address utilisateur, uint montant);
+    // Mapping pour stocker les réclamations
+    mapping(uint256 => Claim) public claims;
+    uint256 public claimCounter; // Compteur pour les réclamations
 
-    // Modificateur pour restreindre l'accès au propriétaire
-    modifier seulementProprietaire() {
-        require(msg.sender == owner, "Seul le proprietaire peut effectuer cette action");
-        _;
+    // Événements pour suivre les actions
+    event UserRegistered(address indexed user, string name);
+    event ClaimSubmitted(uint256 indexed claimId, address indexed user, uint256 amount);
+    event ClaimApproved(uint256 indexed claimId, address indexed user, uint256 amount);
+    event ClaimRejected(uint256 indexed claimId, address indexed user, string reason);
+
+    // Fonction pour enregistrer un utilisateur
+    function registerUser(string memory _name) public {
+        require(bytes(_name).length > 0, "Nom invalide");
+        require(users[msg.sender].wallet == address(0), "Utilisateur deja enregistre");
+
+
+        users[msg.sender] = User(_name, msg.sender);
+        emit UserRegistered(msg.sender, _name);
     }
 
-    // Modificateur pour vérifier si un service existe
-    modifier serviceExiste(uint serviceId) {
-        require(services[serviceId].existe, "Le service n'existe pas");
-        _;
+    // Fonction pour soumettre une réclamation
+    function submitClaim(uint256 _amount, uint256 _delayTime) public {
+        require(users[msg.sender].wallet != address(0), "Utilisateur non enregistre");
+        require(_amount > 0, "Montant invalide");
+        require(_delayTime > 0, "Temps de retard invalide");
+
+        claims[claimCounter] = Claim(msg.sender, _amount, false, _delayTime);
+        emit ClaimSubmitted(claimCounter, msg.sender, _amount);
+        claimCounter++;
     }
 
-    // Constructeur du contrat
-    constructor() {
-        owner = msg.sender;
+    // Fonction pour approuver une réclamation
+    function approveClaim(uint256 _claimId) public {
+        Claim storage claim = claims[_claimId];
+        require(claim.user != address(0), "Reclamation inexistante");
+        require(!claim.isPaid, "Reclamation deja payee");
+        require(address(this).balance >= claim.amount, "Solde du contrat insuffisant");
+
+        claim.isPaid = true;
+        payable(claim.user).transfer(claim.amount);
+        emit ClaimApproved(_claimId, claim.user, claim.amount);
     }
 
-    /**
-     * @dev Permet au propriétaire d'enregistrer un nouveau service.
-     * @param nom Le nom du service (ex: Vol AirFrance).
-     * @param compensation Le montant de la compensation en wei.
-     * @param seuilRetard Le seuil de retard en minutes.
-     */
-    function enregistrerService(string memory nom, uint compensation, uint seuilRetard) public seulementProprietaire {
-        require(compensation > 0, "La compensation doit etre superieure a 0");
-        require(seuilRetard > 0, "Le seuil de retard doit etre superieur a 0");
+    // Fonction pour rejeter une réclamation (optionnel)
+    function rejectClaim(uint256 _claimId, string memory _reason) public {
+        Claim storage claim = claims[_claimId];
+        require(claim.user != address(0), "Reclamation inexistante");
+        require(!claim.isPaid, "Reclamation deja payee");
 
-        totalServices++;
-        services[totalServices] = Service({
-            nom: nom,
-            compagnie: msg.sender,
-            compensation: compensation,
-            seuilRetard: seuilRetard,
-            existe: true
-        });
-
-        emit ServiceEnregistre(totalServices, nom, msg.sender, compensation);
+        delete claims[_claimId];
+        emit ClaimRejected(_claimId, claim.user, _reason);
     }
 
-    /**
-     * @dev Permet à un utilisateur de déclarer un retard.
-     * @param serviceId L'identifiant du service concerné.
-     * @param retardDeclare Le retard déclaré en minutes.
-     */
-    function declarerRetard(uint serviceId, uint retardDeclare) public serviceExiste(serviceId) {
-        require(retardDeclare > 0, "Le retard declare doit etre superieur a 0");
-
-        Service memory service = services[serviceId];
-        require(retardDeclare >= service.seuilRetard, "Le retard declare est inferieur au seuil");
-
-        declarations[msg.sender].push(DeclarationRetard({
-            serviceId: serviceId,
-            retardDeclare: retardDeclare,
-            estCompense: false
-        }));
-
-        emit RetardDeclare(msg.sender, serviceId, retardDeclare);
+    // Fonction pour déposer des fonds dans le contrat
+    function fundContract() public payable {
+        require(msg.value > 0, "Montant de financement invalide");
     }
 
-    /**
-     * @dev Permet à un utilisateur de recevoir une compensation si applicable.
-     * @param serviceId L'identifiant du service concerné.
-     */
-    function compenserRetard(uint serviceId) public serviceExiste(serviceId) {
-        DeclarationRetard[] storage utilisateurDeclarations = declarations[msg.sender];
-        uint montantTotal = 0;
-
-        for (uint i = 0; i < utilisateurDeclarations.length; i++) {
-            if (!utilisateurDeclarations[i].estCompense && utilisateurDeclarations[i].serviceId == serviceId) {
-                montantTotal += services[serviceId].compensation;
-                utilisateurDeclarations[i].estCompense = true;
-            }
-        }
-
-        require(montantTotal > 0, "Aucune compensation n'est due");
-        payable(msg.sender).transfer(montantTotal);
-
-        emit CompensationPayee(msg.sender, montantTotal);
-    }
-
-    /**
-     * @dev Permet au propriétaire d'ajouter des fonds au contrat pour payer les compensations.
-     */
-    function financerContrat() public payable seulementProprietaire {
-        require(msg.value > 0, "Le montant doit etre superieur a 0");
-    }
-
-    /**
-     * @dev Retourne le solde du contrat.
-     */
-    function soldeContrat() public view returns (uint) {
+    // Fonction pour vérifier le solde du contrat
+    function getContractBalance() public view returns (uint256) {
         return address(this).balance;
     }
 
-    /**
-     * @dev Permet au propriétaire de retirer les fonds restants.
-     */
-    function retirerFonds() public seulementProprietaire {
-        payable(owner).transfer(address(this).balance);
-    }
+    // Fonction pour recevoir des fonds (fallback)
+    receive() external payable {}
 }
-
