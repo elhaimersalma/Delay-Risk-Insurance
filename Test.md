@@ -112,7 +112,3 @@ Ensure these accounts are funded in Ganache.
 
 ---
 
-## Contact
-
-- **Developer:** Salma
-- **Email:** salma.email@example.com
