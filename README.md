@@ -82,7 +82,7 @@ Avant de commencer, assurez-vous d'avoir les outils et logiciels suivants :
      },
      compilers: {
        solc: {
-         version: "0.8.x", // Version de Solidity
+         version: "0.8.0", // Version de Solidity
        },
      },
    };
