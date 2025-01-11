@@ -2,86 +2,93 @@
 pragma solidity ^0.8.0;
 
 contract DelayInsurance {
-    // Structure pour stocker les informations des réclamations
     struct Claim {
-        address user;       // Adresse de l'utilisateur
-        uint256 amount;     // Montant réclamé
-        bool isPaid;        // Indique si la réclamation a été payée
-        uint256 delayTime;  // Temps de retard en minutes
+        uint256 claimId;
+        address user;
+        uint256 amount;
+        bool isPaid;
+        uint256 delayTime;
+        string status; // "Pending", "Approved", "Rejected"
+        string ticketId; // User-provided ticket ID
     }
 
-    // Structure pour les utilisateurs
     struct User {
-        string name;        // Nom de l'utilisateur
-        address wallet;     // Adresse Ethereum
+        string name;
+        address wallet;
     }
 
-    // Mapping pour stocker les utilisateurs
+    address public admin; // Admin address
     mapping(address => User) public users;
-
-    // Mapping pour stocker les réclamations
     mapping(uint256 => Claim) public claims;
-    uint256 public claimCounter; // Compteur pour les réclamations
+    mapping(address => uint256[]) public userClaims;
 
-    // Événements pour suivre les actions
+    uint256 public claimCounter;
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can perform this action");
+        _;
+    }
+
     event UserRegistered(address indexed user, string name);
-    event ClaimSubmitted(uint256 indexed claimId, address indexed user, uint256 amount);
-    event ClaimApproved(uint256 indexed claimId, address indexed user, uint256 amount);
-    event ClaimRejected(uint256 indexed claimId, address indexed user, string reason);
+    event ClaimSubmitted(uint256 indexed claimId, address indexed user, uint256 amount, string ticketId);
+    event ClaimApproved(uint256 indexed claimId);
+    event ClaimRejected(uint256 indexed claimId, string reason);
 
-    // Fonction pour enregistrer un utilisateur
+    constructor() {
+        admin = msg.sender; // Assign the contract deployer as the admin
+    }
+
     function registerUser(string memory _name) public {
-        require(bytes(_name).length > 0, "Nom invalide");
-        require(users[msg.sender].wallet == address(0), "Utilisateur deja enregistre");
-
-
+        require(bytes(_name).length > 0, "Invalid name");
+        require(users[msg.sender].wallet == address(0), "User already registered");
         users[msg.sender] = User(_name, msg.sender);
         emit UserRegistered(msg.sender, _name);
     }
 
-    // Fonction pour soumettre une réclamation
-    function submitClaim(uint256 _amount, uint256 _delayTime) public {
-        require(users[msg.sender].wallet != address(0), "Utilisateur non enregistre");
-        require(_amount > 0, "Montant invalide");
-        require(_delayTime > 0, "Temps de retard invalide");
+    function submitClaim(uint256 _amount, uint256 _delayTime, string memory _ticketId) public {
+        require(users[msg.sender].wallet != address(0), "User not registered");
+        require(_amount > 0, "Invalid amount");
+        require(_delayTime > 0, "Invalid delay time");
+        require(bytes(_ticketId).length > 0, "Invalid ticket ID");
 
-        claims[claimCounter] = Claim(msg.sender, _amount, false, _delayTime);
-        emit ClaimSubmitted(claimCounter, msg.sender, _amount);
+        claims[claimCounter] = Claim({
+            claimId: claimCounter,
+            user: msg.sender,
+            amount: _amount,
+            isPaid: false,
+            delayTime: _delayTime,
+            status: "Pending",
+            ticketId: _ticketId
+        });
+
+        userClaims[msg.sender].push(claimCounter);
+
+        emit ClaimSubmitted(claimCounter, msg.sender, _amount, _ticketId);
         claimCounter++;
     }
 
-    // Fonction pour approuver une réclamation
-    function approveClaim(uint256 _claimId) public {
+    function approveClaim(uint256 _claimId) public onlyAdmin {
         Claim storage claim = claims[_claimId];
-        require(claim.user != address(0), "Reclamation inexistante");
-        require(!claim.isPaid, "Reclamation deja payee");
-        require(address(this).balance >= claim.amount, "Solde du contrat insuffisant");
-
+        require(keccak256(bytes(claim.status)) == keccak256(bytes("Pending")), "Claim already processed");
         claim.isPaid = true;
+        claim.status = "Approved";
         payable(claim.user).transfer(claim.amount);
-        emit ClaimApproved(_claimId, claim.user, claim.amount);
+        emit ClaimApproved(_claimId);
     }
 
-    // Fonction pour rejeter une réclamation (optionnel)
-    function rejectClaim(uint256 _claimId, string memory _reason) public {
+    function rejectClaim(uint256 _claimId, string memory _reason) public onlyAdmin {
         Claim storage claim = claims[_claimId];
-        require(claim.user != address(0), "Reclamation inexistante");
-        require(!claim.isPaid, "Reclamation deja payee");
-
-        delete claims[_claimId];
-        emit ClaimRejected(_claimId, claim.user, _reason);
+        require(keccak256(bytes(claim.status)) == keccak256(bytes("Pending")), "Claim already processed");
+        claim.status = "Rejected";
+        emit ClaimRejected(_claimId, _reason);
     }
 
-    // Fonction pour déposer des fonds dans le contrat
-    function fundContract() public payable {
-        require(msg.value > 0, "Montant de financement invalide");
+    function getUserClaims(address _user) public view returns (uint256[] memory) {
+        return userClaims[_user];
     }
 
-    // Fonction pour vérifier le solde du contrat
-    function getContractBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
+    function fundContract() public payable {}
 
-    // Fonction pour recevoir des fonds (fallback)
+    // Allow contract to accept Ether directly
     receive() external payable {}
 }
