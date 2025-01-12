@@ -23,6 +23,7 @@ contract DelayInsurance {
     mapping(address => uint256[]) public userClaims;
 
     uint256 public claimCounter;
+    uint256[] private claimIds; // Array to store all claim IDs
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can perform this action");
@@ -62,6 +63,7 @@ contract DelayInsurance {
         });
 
         userClaims[msg.sender].push(claimCounter);
+        claimIds.push(claimCounter); // Add claim ID to the list of all claims
 
         emit ClaimSubmitted(claimCounter, msg.sender, _amount, _ticketId);
         claimCounter++;
@@ -85,6 +87,10 @@ contract DelayInsurance {
 
     function getUserClaims(address _user) public view returns (uint256[] memory) {
         return userClaims[_user];
+    }
+
+    function getAllClaimIds() public view returns (uint256[] memory) {
+        return claimIds;
     }
 
     function fundContract() public payable {}

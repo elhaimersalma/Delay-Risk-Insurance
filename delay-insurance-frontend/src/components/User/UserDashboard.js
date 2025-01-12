@@ -8,13 +8,14 @@ import { ethers } from "ethers";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const contractAddress = "0x5037413dAD9058f93d37ba4e751500AAFdF70ae3";
+const contractAddress = "0x80d517FbbbbbaDe77c8a965f1B05F28782Db777c";
 const contractABI = require("../../contract/DelayInsurance.json").abi;
 
 const UserDashboard = () => {
     const [balance, setBalance] = useState("0");
     const [lastMonthData, setLastMonthData] = useState({ percentage: 0, amount: 0 });
 
+    // Fetch user balance
     const fetchBalance = async () => {
         try {
             const { signer } = await connectWallet();
@@ -25,10 +26,11 @@ const UserDashboard = () => {
             setBalance(ethers.formatEther(userBalance));
         } catch (error) {
             console.error("Error fetching balance:", error);
-            toast.error("Failed to fetch user balance.");
+            toast.error("Failed to fetch user balance. Please try again.", { autoClose: 5000 });
         }
     };
 
+    // Fetch user transaction history
     const fetchTransactionHistory = async () => {
         try {
             const { signer } = await connectWallet();
@@ -40,7 +42,6 @@ const UserDashboard = () => {
             const claimDetails = await Promise.all(
                 userClaims.map(async (claimId) => {
                     const claim = await contract.claims(claimId);
-
                     if (claim.status.trim().toLowerCase() === "approved") {
                         const timestamp = claim.timestamp || Math.floor(Date.now() / 1000);
                         return {
@@ -76,7 +77,7 @@ const UserDashboard = () => {
             setLastMonthData({ percentage: currentMonthPercentage, amount: currentMonthAmount.toFixed(4) });
         } catch (error) {
             console.error("Error fetching transaction history:", error);
-            toast.error("Failed to fetch transaction history.");
+            toast.error("Failed to fetch transaction history. Please try again.", { autoClose: 5000 });
         }
     };
 
@@ -119,7 +120,7 @@ const UserDashboard = () => {
                             </div>
                             <div>
                                 <p style={styles.balance}>{lastMonthData.amount} ETH</p>
-                                <p style={styles.balanceLabel}>({lastMonthData.percentage}% This Month)</p>
+                                <p style={styles.balanceLabel}>(+{lastMonthData.percentage}% This Month)</p>
                             </div>
                         </div>
                     </div>

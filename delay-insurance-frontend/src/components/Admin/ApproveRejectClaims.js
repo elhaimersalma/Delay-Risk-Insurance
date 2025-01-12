@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import connectWallet from "../../utils/connectWallet";
 import contractJSON from "../../contract/DelayInsurance.json"; // Ensure correct path
 
-const contractAddress = "0x5037413dAD9058f93d37ba4e751500AAFdF70ae3";
+const contractAddress = "0x80d517FbbbbbaDe77c8a965f1B05F28782Db777c";
 const contractABI = contractJSON.abi;
 
 const ApproveRejectClaims = () => {

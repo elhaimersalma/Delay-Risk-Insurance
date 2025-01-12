@@ -5,7 +5,7 @@ import contractABI from "../../contract/DelayInsurance.json";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const contractAddress = "0x5037413dAD9058f93d37ba4e751500AAFdF70ae3";
+const contractAddress = "0x80d517FbbbbbaDe77c8a965f1B05F28782Db777c";
 
 const SubmitClaim = () => {
     const [amount, setAmount] = useState("");
@@ -21,12 +21,12 @@ const SubmitClaim = () => {
             const user = await contract.users(activeAccount);
 
             if (user.wallet === ZeroAddress) {
-                toast.error("Active account is not registered.");
+                toast.error("Active account is not registered.",{ autoClose: 5000 });
                 return;
             }
 
             if (!amount || !delayTime || !ticket) {
-                toast.error("Please fill in all fields.");
+                toast.error("Please fill in all fields.",{ autoClose: 5000 });
                 return;
             }
 
@@ -49,12 +49,12 @@ const SubmitClaim = () => {
             );
 
             await tx.wait();
-            toast.success("Claim submitted successfully!");
+            toast.success("Claim submitted successfully!",{ autoClose: 5000 });
             setAmount("");
             setDelayTime("");
             setTicket(""); // Reset ticket field
         } catch (error) {
-            toast.error("Error submitting claim. Please try again.");
+            toast.error("Error submitting claim. Please try again.",{ autoClose: 5000 });
             console.error("Error:", error.message || error);
         }
     };

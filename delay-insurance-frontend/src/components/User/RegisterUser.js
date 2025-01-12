@@ -5,7 +5,7 @@ import contractABI from "../../contract/DelayInsurance.json";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const contractAddress = "0x5037413dAD9058f93d37ba4e751500AAFdF70ae3";
+const contractAddress = "0x80d517FbbbbbaDe77c8a965f1B05F28782Db777c";
 
 const RegisterUser = () => {
     const [isRegistered, setIsRegistered] = useState(false);
@@ -28,7 +28,7 @@ const RegisterUser = () => {
                 setIsRegistered(true);
                 setAccountName(user.name); // Display the registered name
                 if (!toastShown.current) { // Ensure the toast is shown only once
-                    toast.success(`Welcome back, ${user.name}!`);
+                    toast.success(`Welcome back, ${user.name}!`,{ autoClose: 5000 });
                     toastShown.current = true;
                 }
                 return;
@@ -37,13 +37,13 @@ const RegisterUser = () => {
             setIsRegistered(false);
         } catch (error) {
             console.error("Error checking registration status:", error.message || error);
-            toast.error("Error checking registration status.");
+            toast.error("Error checking registration status.",{ autoClose: 5000 });
         }
     };
 
     const handleRegister = async () => {
         if (!userName) {
-            toast.error("Name is required.");
+            toast.error("Name is required.",{ autoClose: 5000 });
             return;
         }
 
@@ -55,12 +55,12 @@ const RegisterUser = () => {
             const tx = await contract.registerUser(userName);
             await tx.wait();
 
-            toast.success("User registered successfully!");
+            toast.success("User registered successfully!",{ autoClose: 5000 });
             setIsRegistered(true);
             setAccountName(userName); // Update UI with the registered name
         } catch (error) {
             console.error("Error during registration:", error.message || error);
-            toast.error("Error during registration. Please try again.");
+            toast.error("Error during registration. Please try again.",{ autoClose: 5000 });
         }
     };
 

@@ -6,7 +6,7 @@ import UserDashboard from "./components/User/UserDashboard";
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import contractABI from "./contract/DelayInsurance.json";
 
-const contractAddress = "0x5037413dAD9058f93d37ba4e751500AAFdF70ae3";
+const contractAddress = "0x80d517FbbbbbaDe77c8a965f1B05F28782Db777c";
 
 function App() {
     const [role, setRole] = useState(null);
