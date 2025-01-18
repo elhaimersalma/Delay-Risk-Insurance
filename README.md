@@ -31,9 +31,8 @@ This project aims to address the recurring issue of delays in the railway networ
 ## Technologies Used
 - **Blockchain:** Ethereum (Ganache for development)
 - **Programming Language:** Solidity
-- **Frontend:** HTML, CSS, JavaScript
+- **Frontend:** React
 - **Blockchain Interaction:** Web3.js
-- **Smart Contract Testing:** Truffle
 - **Crypto Wallet Integration:** MetaMask
 
 ---
@@ -50,58 +49,11 @@ This project aims to address the recurring issue of delays in the railway networ
 
 ---
 
-## Installation and Setup
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-repo/assurance-risque-retard.git
-   cd assurance-risque-retard
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start Ganache:
-   ```bash
-   ganache-cli
-   ```
-
-4. Deploy the smart contracts:
-   ```bash
-   truffle migrate --network development
-   ```
-
-5. Start the frontend:
-   ```bash
-   npm start
-   ```
-
----
-
 ## Usage
 1. Register as a user and log in.
 2. Add train service details (ID, scheduled times, etc.).
 3. Submit a delay claim if applicable.
 4. Monitor claim status and receive compensation directly in Ether.
-
----
-
-## Contributing
-1. Fork the repository.
-2. Create a feature branch:
-   ```bash
-   git checkout -b feature-name
-   ```
-3. Commit your changes:
-   ```bash
-   git commit -m "Add feature-name"
-   ```
-4. Push to the branch:
-   ```bash
-   git push origin feature-name
-   ```
-5. Create a pull request.
 
 ---
 
@@ -115,8 +67,3 @@ This project aims to address the recurring issue of delays in the railway networ
 
 ## Acknowledgments
 Special thanks to **Mr. Anass Zaidouni** for his guidance and support during the development of this project.
-
----
-
-## License
-This project is licensed under the MIT License. See the `LICENSE` file for details.
